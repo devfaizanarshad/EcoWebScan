@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Website Carbon Analyzer</title>
+  <script src="script.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .animate-float {
+      animation: float 2s ease-in-out infinite;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in forwards;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .earth-loader {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto;
+    }
+    
+    .earth {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0f766e 0%, #059669 100%);
+      box-shadow: 0 0 20px rgba(5, 150, 105, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .earth::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: transparent;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.8) 10%, transparent 10.5%);
+      background-size: 20px 20px;
+      background-position: 0 0;
+      animation: rotate 10s linear infinite;
+      opacity: 0.3;
+    }
+    
+    .orbit {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 180px;
+      height: 180px;
+      border: 1px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .satellite {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 12px;
+      height: 12px;
+      background: #f97316;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px #f97316;
+      animation: orbit 3s linear infinite;
+    }
+    
+    @keyframes orbit {
+      0% { transform: translate(-50%, -50%) rotate(0deg) translateX(90px) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg) translateX(90px) rotate(-360deg); }
+    }
+    
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .grade-a { color: #059669; }
+    .grade-b { color: #65a30d; }
+    .grade-c { color: #ca8a04; }
+    .grade-d { color: #ea580c; }
+    .grade-f { color: #dc2626; }
+  </style>
+</head>
+<body class="min-h-screen flex font-sans text-gray-800">
+
+  <!-- Left Side: Hero & Input -->
+  <section class="w-full md:w-1/2 bg-gradient-to-br from-green-600 to-green-500 text-white flex flex-col justify-center px-10 py-12">
+    <div class="max-w-md">
+      <h1 class="text-3xl md:text-4xl font-bold flex items-center gap-2 mb-4">
+        <span class="animate-float">🌍</span> Website Carbon Analyzer
+      </h1>
+      <p class="mb-6 text-green-100">
+        Enter your website URL to measure its environmental impact and discover how to make it greener.
+      </p>
+
+      <div class="flex w-full mb-6">
+        <input 
+          type="url" 
+          id="websiteUrl" 
+          placeholder="https://example.com" 
+          class="flex-grow px-4 py-3 rounded-l-lg text-gray-800 focus:outline-none" 
+        />
+        <button 
+          id="analyzeBtn"
+          class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-r-lg font-semibold transition pulse"
+        >
+          Analyze
+        </button>
+      </div>
+
+      <!-- Error Message -->
+      <div id="errorMessage" class="text-red-300 mb-4 hidden"></div>
+
+      <!-- Loading Animation (for left side) -->
+      <div id="loading" class="hidden flex flex-col items-center mt-6">
+        <div class="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+        <p class="mt-3 text-green-100">Analyzing your website...</p>
+      </div>
+
+      <!-- Sustainability Facts -->
+      <div class="mt-10">
+        <h2 class="text-lg font-semibold mb-3">Why Sustainable Web Matters</h2>
+        <ul class="space-y-2 text-green-100 text-sm">
+          <li>• The internet produces 2% of global carbon emissions</li>
+          <li>• A typical web page produces 1.76g of CO₂ per view</li>
+          <li>• 10,000 page views = 176 kg of CO₂ per year</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right Side: Results -->
+  <section id="results" class="w-full md:w-1/2 bg-white px-10 py-12 overflow-y-auto">
+    <h2 class="text-2xl font-bold mb-8 text-gray-800">Your Analysis Results</h2>
+    
+    <!-- Loader Container -->
+    <div id="resultsLoader" class="hidden flex flex-col items-center justify-center py-16">
+      <div class="earth-loader mb-6">
+        <div class="earth"></div>
+        <div class="orbit"></div>
+        <div class="satellite"></div>
+      </div>
+      <p class="text-lg text-gray-600 mb-2">Analyzing your website's carbon footprint</p>
+      <p class="text-sm text-gray-500">This may take a few moments...</p>
+    </div>
+
+    <!-- Results Container -->
+    <div id="resultsContainer">
+      <!-- Stats Grid -->
+      <div class="grid sm:grid-cols-2 gap-6 mb-10">
+        <div class="p-6 bg-green-50 rounded-xl shadow">
+          <h3 class="text-lg font-semibold">Carbon Rating</h3>
+          <p id="overallGrade" class="text-3xl font-bold mt-2 text-green-700">–</p>
+        </div>
+        <div class="p-6 bg-green-50 rounded-xl shadow">
+          <h3 class="text-lg font-semibold">CO₂ per Visit</h3>
+          <p id="co2Value" class="text-xl font-medium mt-2 text-gray-700">–</p>
+        </div>
+        <div class="p-6 bg-green-50 rounded-xl shadow">
+          <h3 class="text-lg font-semibold">Page Weight</h3>
+          <p id="pageWeight" class="text-xl font-medium mt-2 text-gray-700">–</p>
+        </div>
+        <div class="p-6 bg-green-50 rounded-xl shadow">
+          <h3 class="text-lg font-semibold">Green Hosting</h3>
+          <p id="greenHost" class="text-xl font-medium mt-2 text-gray-700">–</p>
+        </div>
+      </div>
+
+      <!-- Environmental Impact -->
+      <div class="grid sm:grid-cols-3 gap-6 mb-10">
+        <div class="p-6 bg-white rounded-xl shadow border">
+          <h3 class="text-lg font-semibold">Trees Needed</h3>
+          <p id="treesValue" class="text-xl font-medium mt-2">–</p>
+        </div>
+        <div class="p-6 bg-white rounded-xl shadow border">
+          <h3 class="text-lg font-semibold">Car Miles Equivalent</h3>
+          <p id="carMiles" class="text-xl font-medium mt-2">–</p>
+        </div>
+        <div class="p-6 bg-white rounded-xl shadow border">
+          <h3 class="text-lg font-semibold">Phone Charges</h3>
+          <p id="phoneCharges" class="text-xl font-medium mt-2">–</p>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div>
+        <h3 class="text-xl font-bold mb-4">Recommendations</h3>
+        <div id="recommendationsList" class="space-y-4 text-gray-600">
+          <p>–</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+</body>
+</html>
