@@ -269,8 +269,8 @@ app.use(
   })
 );
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname)));
+// // Serve static files from public directory
+// app.use(express.static(path.join(__dirname)));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -280,7 +280,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Middlewares
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
