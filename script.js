@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     analyzeBtn.disabled = true;
 
     // Make API call to your backend
-    fetch('/api/analyze', {
+    fetch('https://website-carbon-analyzer.vercel.app/api/analyze', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',

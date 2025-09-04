@@ -408,6 +408,8 @@ function generateRecommendations(ratings, pageWeight, co2) {
 
 // Function to get carbon data
 async function getCarbonData(SearchURL) {
+  console.log(SearchURL);
+  
   try {
     const websiteCarbonCalculator = new WebsiteCarbonCalculator({ 
       pagespeedApiKey: carbon_API_KEY 
