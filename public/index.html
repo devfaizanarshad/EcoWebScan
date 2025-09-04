@@ -19,7 +19,7 @@
     .fade-in { animation: fadeIn 1s ease forwards; }
 
     /* Loader earth */
-    .earth-loader { position: relative; width: 120px; height: 120px; margin: 0 auto; }
+    .earth-loader { position: relative; width: 120px; height: 120px; margin: 0 auto; max-width: 100%; }
     .earth { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, #0f766e 0%, #059669 100%); box-shadow: 0 0 20px rgba(5,150,105,0.4); position: relative; overflow: hidden; }
     .earth::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.8) 10%, transparent 10.5%); background-size: 20px 20px; animation: rotate 10s linear infinite; opacity: 0.3; }
     .orbit { position: absolute; top: 50%; left: 50%; width: 180px; height: 180px; border: 1px dashed rgba(255,255,255,0.3); border-radius: 50%; transform: translate(-50%, -50%); }
@@ -41,30 +41,30 @@
     /* Smooth scroll for results */
     #results { scroll-behavior: smooth; }
 
-    /* Keep left section fixed */
+    /* Responsive adjustments */
     @media(min-width:768px) {
       #heroSection { position: sticky; top: 0; height: 100vh; }
     }
   </style>
 </head>
-<body class="min-h-screen flex font-sans text-gray-800 bg-gray-50">
+<body class="min-h-screen flex flex-col md:flex-row font-sans text-gray-800 bg-gray-50">
 
   <!-- Left Side: Hero & Input -->
-  <section id="heroSection" class="w-full md:w-1/2 bg-gradient-to-br from-green-600 to-green-500 text-white flex flex-col justify-center px-10 py-12">
-    <div class="max-w-md">
-      <h1 class="text-4xl md:text-5xl font-bold flex items-center gap-3 mb-6">
+  <section id="heroSection" class="w-full md:w-1/2 bg-gradient-to-br from-green-600 to-green-500 text-white flex flex-col justify-center px-6 sm:px-10 py-8 md:py-12">
+    <div class="max-w-md mx-auto">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold flex items-center gap-3 mb-4 sm:mb-6">
         <span class="animate-float">🌍</span> Website Carbon Analyzer
       </h1>
-      <p class="mb-8 text-green-100 text-lg">
+      <p class="mb-6 sm:mb-8 text-green-100 text-base sm:text-lg">
         Measure the environmental impact of your website and discover how to make it greener.
       </p>
 
       <!-- Input & Button -->
-      <div class="flex w-full mb-6 shadow-lg">
+      <div class="flex flex-col sm:flex-row w-full mb-6 sm:mb-8 gap-2 sm:gap-0 shadow-lg">
         <input type="url" id="websiteUrl" placeholder="https://example.com" 
-          class="flex-grow px-5 py-4 rounded-l-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-300" />
+          class="flex-grow px-4 py-3 sm:py-4 sm:rounded-l-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-300" />
         <button id="analyzeBtn"
-          class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-r-lg font-semibold transition pulse shadow-lg">
+          class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 sm:py-4 sm:rounded-r-lg font-semibold transition pulse shadow-lg w-full sm:w-auto">
           Analyze
         </button>
       </div>
@@ -73,15 +73,15 @@
       <div id="errorMessage" class="text-red-300 mb-4 hidden font-medium"></div>
 
       <!-- Loading -->
-      <div id="loading" class="hidden flex flex-col items-center mt-6">
+      <div id="loading" class="hidden flex flex-col items-center mt-4 sm:mt-6">
         <div class="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-        <p class="mt-3 text-green-100 font-medium">Analyzing your website...</p>
+        <p class="mt-3 text-green-100 font-medium text-sm sm:text-base">Analyzing your website...</p>
       </div>
 
       <!-- Sustainability Facts -->
-      <div class="mt-12">
-        <h2 class="text-xl font-semibold mb-4">Why Sustainable Web Matters</h2>
-        <ul class="space-y-2 text-green-100 text-sm">
+      <div class="mt-8 sm:mt-12">
+        <h2 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Why Sustainable Web Matters</h2>
+        <ul class="space-y-1 sm:space-y-2 text-green-100 text-sm sm:text-base">
           <li>• The internet produces 2% of global carbon emissions</li>
           <li>• A typical web page produces 1.76g of CO₂ per view</li>
           <li>• 10,000 page views = 176 kg of CO₂ per year</li>
@@ -91,59 +91,59 @@
   </section>
 
   <!-- Right Side: Results -->
-  <section id="results" class="w-full md:w-1/2 bg-white px-10 py-12 overflow-y-auto">
-    <h2 class="text-3xl font-bold mb-8 text-gray-800 border-b pb-4">Your Analysis Results</h2>
+  <section id="results" class="w-full md:w-1/2 bg-white px-6 sm:px-10 py-8 md:py-12 overflow-y-auto">
+    <h2 class="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-800 border-b pb-2 sm:pb-4">Your Analysis Results</h2>
 
     <!-- Loader -->
-    <div id="resultsLoader" class="hidden flex flex-col items-center justify-center py-16">
-      <div class="earth-loader mb-6">
+    <div id="resultsLoader" class="hidden flex flex-col items-center justify-center py-12 sm:py-16">
+      <div class="earth-loader mb-4 sm:mb-6">
         <div class="earth"></div>
         <div class="orbit"></div>
         <div class="satellite"></div>
       </div>
-      <p class="text-lg text-gray-600 mb-2">Analyzing your website's carbon footprint</p>
+      <p class="text-lg text-gray-600 mb-1 sm:mb-2">Analyzing your website's carbon footprint</p>
       <p class="text-sm text-gray-500">This may take a few moments...</p>
     </div>
 
     <!-- Results Grid -->
     <div id="resultsContainer">
-      <div class="grid sm:grid-cols-2 gap-6 mb-10">
-        <div class="result-card p-6 bg-green-50 rounded-xl shadow hover:shadow-lg transition">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-10">
+        <div class="result-card p-4 sm:p-6 bg-green-50 rounded-xl shadow hover:shadow-lg transition">
           <h3 class="text-lg font-semibold">Carbon Rating</h3>
-          <p id="overallGrade" class="text-3xl font-bold mt-2 text-green-700 fade-in">–</p>
+          <p id="overallGrade" class="text-2xl sm:text-3xl font-bold mt-2 text-green-700 fade-in">–</p>
         </div>
-        <div class="result-card p-6 bg-green-50 rounded-xl shadow hover:shadow-lg transition">
+        <div class="result-card p-4 sm:p-6 bg-green-50 rounded-xl shadow hover:shadow-lg transition">
           <h3 class="text-lg font-semibold">CO₂ per Visit</h3>
-          <p id="co2Value" class="text-xl font-medium mt-2 text-gray-700 fade-in">–</p>
+          <p id="co2Value" class="text-lg sm:text-xl font-medium mt-2 text-gray-700 fade-in">–</p>
         </div>
-        <div class="result-card p-6 bg-green-50 rounded-xl shadow hover:shadow-lg transition">
+        <div class="result-card p-4 sm:p-6 bg-green-50 rounded-xl shadow hover:shadow-lg transition">
           <h3 class="text-lg font-semibold">Page Weight</h3>
-          <p id="pageWeight" class="text-xl font-medium mt-2 text-gray-700 fade-in">–</p>
+          <p id="pageWeight" class="text-lg sm:text-xl font-medium mt-2 text-gray-700 fade-in">–</p>
         </div>
-        <div class="result-card p-6 bg-green-50 rounded-xl shadow hover:shadow-lg transition">
+        <div class="result-card p-4 sm:p-6 bg-green-50 rounded-xl shadow hover:shadow-lg transition">
           <h3 class="text-lg font-semibold">Green Hosting</h3>
-          <p id="greenHost" class="text-xl font-medium mt-2 text-gray-700 fade-in">–</p>
+          <p id="greenHost" class="text-lg sm:text-xl font-medium mt-2 text-gray-700 fade-in">–</p>
         </div>
       </div>
 
-      <div class="grid sm:grid-cols-3 gap-6 mb-10">
-        <div class="result-card p-6 bg-white rounded-xl shadow border hover:shadow-lg transition">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-10">
+        <div class="result-card p-4 sm:p-6 bg-white rounded-xl shadow border hover:shadow-lg transition">
           <h3 class="text-lg font-semibold">Trees Needed</h3>
-          <p id="treesValue" class="text-xl font-medium mt-2 fade-in">–</p>
+          <p id="treesValue" class="text-lg sm:text-xl font-medium mt-2 fade-in">–</p>
         </div>
-        <div class="result-card p-6 bg-white rounded-xl shadow border hover:shadow-lg transition">
+        <div class="result-card p-4 sm:p-6 bg-white rounded-xl shadow border hover:shadow-lg transition">
           <h3 class="text-lg font-semibold">Car Miles Equivalent</h3>
-          <p id="carMiles" class="text-xl font-medium mt-2 fade-in">–</p>
+          <p id="carMiles" class="text-lg sm:text-xl font-medium mt-2 fade-in">–</p>
         </div>
-        <div class="result-card p-6 bg-white rounded-xl shadow border hover:shadow-lg transition">
+        <div class="result-card p-4 sm:p-6 bg-white rounded-xl shadow border hover:shadow-lg transition">
           <h3 class="text-lg font-semibold">Phone Charges</h3>
-          <p id="phoneCharges" class="text-xl font-medium mt-2 fade-in">–</p>
+          <p id="phoneCharges" class="text-lg sm:text-xl font-medium mt-2 fade-in">–</p>
         </div>
       </div>
 
       <div>
-        <h3 class="text-xl font-bold mb-4">Recommendations</h3>
-        <div id="recommendationsList" class="space-y-4 text-gray-600 fade-in">
+        <h3 class="text-lg sm:text-xl font-bold mb-2 sm:mb-4">Recommendations</h3>
+        <div id="recommendationsList" class="space-y-2 sm:space-y-4 text-gray-600 fade-in">
           <p>–</p>
         </div>
       </div>

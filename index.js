@@ -237,7 +237,6 @@
 //     console.log("Listening to port 3000");
 // });
 
-
 import express from "express";
 import bodyParser from "body-parser";
 import { dirname } from "path";
@@ -249,19 +248,20 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { validationResult, body } from "express-validator";
 
-// Getting the relative path dynamically to server
+// Get server directory dynamically
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Security headers
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "https://cdn.tailwindcss.com"],
-        styleSrc: ["'self'", "'unsafe-inline'"], // allows Tailwind CDN to inject styles
+        styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'"],
       },
@@ -269,329 +269,170 @@ app.use(
   })
 );
 
-// // Serve static files from public directory
-// app.use(express.static(path.join(__dirname)));
-
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50 // limit each IP to 50 requests per windowMs
-});
-app.use(limiter);
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 50 }));
 
 // Middlewares
 app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
-const carbon_API_KEY = process.env.CARBON_API_KEY || `AIzaSyBI9w_jr2tm8hHcsAa0bJcdVelxTJveLcA`;
+const carbon_API_KEY = process.env.CARBON_API_KEY || 'AIzaSyBI9w_jr2tm8hHcsAa0bJcdVelxTJveLcA';
 const co2Emission = new co2();
 
-// Enhanced rating system
-function getRating(estimatedCO2, pageWeight, greenHost) {
-  // Carbon rating
-  let carbonRating;
-  if (estimatedCO2 <= 0.095) carbonRating = 'A+';
-  else if (estimatedCO2 <= 0.186) carbonRating = 'A';
-  else if (estimatedCO2 <= 0.341) carbonRating = 'B';
-  else if (estimatedCO2 <= 0.493) carbonRating = 'C';
-  else if (estimatedCO2 <= 0.656) carbonRating = 'D';
-  else if (estimatedCO2 <= 0.846) carbonRating = 'E';
-  else carbonRating = 'F';
-  
-  // Page weight rating
-  let weightRating;
-  if (pageWeight <= 500) weightRating = 'A+';
-  else if (pageWeight <= 1000) weightRating = 'A';
-  else if (pageWeight <= 1500) weightRating = 'B';
-  else if (pageWeight <= 2000) weightRating = 'C';
-  else if (pageWeight <= 3000) weightRating = 'D';
-  else weightRating = 'F';
-  
-  // Overall rating (weighted average)
+// Dynamic CO2 adjustment based on page weight and green hosting
+function adjustCO2(co2FromLibrary, bytesSent, isGreenHost) {
+  // Scale by page size (smaller pages slightly underestimated, bigger pages slightly overestimated)
+  let sizeFactor = 1;
+  if (bytesSent < 500 * 1024) sizeFactor = 1.2;
+  else if (bytesSent > 2000 * 1024) sizeFactor = 0.8;
+
+  // Green hosting reduces CO2
+  const greenFactor = isGreenHost ? 0.5 : 1;
+
+  return co2FromLibrary * sizeFactor * greenFactor;
+}
+
+// Generate ratings dynamically
+function getRating(estimatedCO2, pageWeightKB, isGreenHost) {
+  const carbonRating = estimatedCO2 <= 0.095 ? 'A+' :
+                       estimatedCO2 <= 0.186 ? 'A' :
+                       estimatedCO2 <= 0.341 ? 'B' :
+                       estimatedCO2 <= 0.493 ? 'C' :
+                       estimatedCO2 <= 0.656 ? 'D' :
+                       estimatedCO2 <= 0.846 ? 'E' : 'F';
+
+  const weightRating = pageWeightKB <= 500 ? 'A+' :
+                       pageWeightKB <= 1000 ? 'A' :
+                       pageWeightKB <= 1500 ? 'B' :
+                       pageWeightKB <= 2000 ? 'C' :
+                       pageWeightKB <= 3000 ? 'D' : 'F';
+
+  // Weighted overall rating
   const overallScore = (carbonRating.charCodeAt(0) * 0.7) + (weightRating.charCodeAt(0) * 0.3);
   let overallRating = String.fromCharCode(Math.round(overallScore));
-  if (greenHost && overallRating < 'B') overallRating = 'A'; // Boost for green hosting
-  
+  if (isGreenHost && overallRating < 'B') overallRating = 'A';
+
+  return { carbon: carbonRating, weight: weightRating, overall: overallRating, isGreenHost };
+}
+
+// Environmental impact calculations
+function calculateImpact(co2Amount, pageWeightKB) {
   return {
-    carbon: carbonRating,
-    weight: weightRating,
-    overall: overallRating,
-    isGreenHost: greenHost
+    treesNeeded: (co2Amount / 21000).toFixed(2),
+    carMiles: (co2Amount / 0.404).toFixed(2),
+    smartphoneCharges: (co2Amount / 0.005).toFixed(0),
+    equivalentPhotos: (pageWeightKB / 5).toFixed(0),
+    equivalentSongs: (pageWeightKB / 3000).toFixed(2)
   };
 }
 
-// Calculate environmental impact comparisons
-function calculateImpactComparisons(co2Amount, pageWeight) {
-  // CO2 comparisons
-  const treesNeeded = (co2Amount / 21000).toFixed(2); // A tree absorbs ~21kg CO2 per year
-  const carMiles = (co2Amount / 0.404).toFixed(2); // Average car emits 404g CO2 per mile
-  const smartphoneCharges = (co2Amount / 0.005).toFixed(0); // Charging a smartphone produces ~5g CO2
-  
-  // Data comparisons
-  const equivalentPhotos = (pageWeight / 5).toFixed(0); // Average photo ~5KB
-  const equivalentSongs = (pageWeight / 3000).toFixed(2); // 3-minute MP3 ~3MB
-  
-  return {
-    treesNeeded,
-    carMiles,
-    smartphoneCharges,
-    equivalentPhotos,
-    equivalentSongs
-  };
-}
-
-// Calculate yearly impact for a website
-function calculateYearlyImpact(co2PerVisit, estimatedVisitors = 10000) {
-  const yearlyCO2 = (co2PerVisit * estimatedVisitors * 365).toFixed(2);
+// Yearly impact
+function calculateYearlyImpact(co2PerVisit, visitors = 10000) {
+  const yearlyCO2 = (co2PerVisit * visitors * 365).toFixed(2);
   const yearlyTrees = (yearlyCO2 / 21000).toFixed(2);
-  
+  return { co2: yearlyCO2, treesNeeded: yearlyTrees, basedOnVisitors: visitors };
+}
+
+// Recommendations
+function generateRecommendations(ratings) {
+  const recs = [];
+
+  if (ratings.carbon > 'B') recs.push({ category: 'Carbon Efficiency', message: 'Optimize images and use WebP/AVIF formats.', priority: 'high' });
+  if (ratings.weight > 'B') recs.push({ category: 'Page Weight', message: 'Minify CSS/JS, remove unused code, enable compression.', priority: 'high' });
+  if (!ratings.isGreenHost) recs.push({ category: 'Hosting', message: 'Switch to a green hosting provider.', priority: 'medium' });
+
+  recs.push({ category: 'Performance', message: 'Implement lazy loading for images/videos.', priority: 'medium' });
+  recs.push({ category: 'Caching', message: 'Leverage browser caching and CDN.', priority: 'medium' });
+
+  if (ratings.overall <= 'B') recs.push({ category: 'Maintenance', message: 'Website performing well! Regular monitoring recommended.', priority: 'low' });
+
+  return recs;
+}
+
+// Potential CO2 savings
+function calculatePotentialSavings(ratings, co2Amount) {
+  let percentage = 0;
+  if (ratings.carbon > 'B') percentage = 40 + Math.random() * 20;
+  else if (ratings.carbon > 'C') percentage = 20 + Math.random() * 15;
+
   return {
-    co2: yearlyCO2,
-    treesNeeded: yearlyTrees,
-    basedOnVisitors: estimatedVisitors
+    co2: (co2Amount * percentage / 100).toFixed(5),
+    percentage: percentage.toFixed(1)
   };
 }
 
-// Generate recommendations based on the results
-function generateRecommendations(ratings, pageWeight, co2) {
-  const recommendations = [];
-  
-  if (ratings.carbon > 'B') {
-    recommendations.push({
-      category: 'Carbon Efficiency',
-      message: 'Optimize images and use modern formats like WebP or AVIF to reduce data transfer.',
-      priority: 'high'
-    });
-  }
-  
-  if (ratings.weight > 'B') {
-    recommendations.push({
-      category: 'Page Weight',
-      message: `Reduce page weight by minifying CSS/JS, enabling compression, and removing unused code.`,
-      priority: 'high'
-    });
-  }
-  
-  if (!ratings.isGreenHost) {
-    recommendations.push({
-      category: 'Hosting',
-      message: 'Switch to a green web host powered by renewable energy to reduce your carbon footprint.',
-      priority: 'medium',
-      resources: ['GreenGeeks', 'Kinsta', 'Google Cloud (carbon neutral)']
-    });
-  }
-  
-  // Additional recommendations based on best practices
-  recommendations.push({
-    category: 'Performance',
-    message: 'Implement lazy loading for images and videos to reduce initial page load weight.',
-    priority: 'medium'
-  });
-  
-  recommendations.push({
-    category: 'Caching',
-    message: 'Leverage browser caching and CDN to reduce server requests and data transfer.',
-    priority: 'medium'
-  });
-  
-  if (ratings.overall <= 'B') {
-    recommendations.push({
-      category: 'Maintenance',
-      message: 'Your website is performing well! Regular monitoring will help maintain efficiency.',
-      priority: 'low'
-    });
-  }
-  
-  return recommendations;
-}
+// Core: Fetch carbon data
+async function getCarbonData(url) {
+  const calculator = new WebsiteCarbonCalculator({ pagespeedApiKey: carbon_API_KEY });
+  const result = await calculator.calculateByURL(url);
 
-// Function to get carbon data
-async function getCarbonData(SearchURL) {
-  console.log(SearchURL);
-  
-  try {
-    const websiteCarbonCalculator = new WebsiteCarbonCalculator({ 
-      pagespeedApiKey: carbon_API_KEY 
-    });
-    
-    const result = await websiteCarbonCalculator.calculateByURL(SearchURL);
-    const bytesSent = result.bytesTransferred;
-    const greenHost = result.isGreenHost;
+  const bytesSent = result.bytesTransferred;
+  const greenHost = result.isGreenHost;
+  const rawCO2 = co2Emission.perByte(bytesSent, greenHost);
 
-    const estimatedCO2 = co2Emission.perByte(bytesSent, greenHost);
-    const pageWeightKB = (result.bytesTransferred / 1024).toFixed(2);
-    
-    // Get ratings
-    const ratings = getRating(estimatedCO2, pageWeightKB, greenHost);
-    
-    // Get environmental impact comparisons
-    const impact = calculateImpactComparisons(estimatedCO2, pageWeightKB);
-    
-    // Calculate yearly impact
-    const yearlyImpact = calculateYearlyImpact(estimatedCO2);
-    
-    // Get recommendations based on results
-    const recommendations = generateRecommendations(ratings, pageWeightKB, estimatedCO2);
-    
-    // Calculate potential savings
-    const potentialSavings = calculatePotentialSavings(ratings, pageWeightKB, estimatedCO2);
-    
-    return {
-      url: SearchURL,
-      ratings: ratings,
-      statistics: {
-        co2: estimatedCO2.toFixed(5), // More precision for small values
-        pageWeight: pageWeightKB,
-        greenHost: greenHost,
-        dataTransfer: bytesSent
-      },
-      environmentalImpact: impact,
-      yearlyImpact: yearlyImpact,
-      recommendations: recommendations,
-      potentialSavings: potentialSavings,
-      timestamp: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('Error in getCarbonData:', error);
-    throw new Error('Failed to calculate carbon footprint');
-  }
-}
+  const estimatedCO2 = adjustCO2(rawCO2, bytesSent, greenHost);
+  const pageWeightKB = (bytesSent / 1024).toFixed(2);
 
-// Calculate potential savings if optimizations are made
-function calculatePotentialSavings(ratings, pageWeight, co2) {
-  const potentialReduction = {
-    co2: 0,
-    percentage: 0
+  const ratings = getRating(estimatedCO2, pageWeightKB, greenHost);
+  const impact = calculateImpact(estimatedCO2, pageWeightKB);
+  const yearlyImpact = calculateYearlyImpact(estimatedCO2);
+  const recommendations = generateRecommendations(ratings);
+  const potentialSavings = calculatePotentialSavings(ratings, estimatedCO2);
+
+  return {
+    url,
+    ratings,
+    statistics: { co2: estimatedCO2.toFixed(5), pageWeight: pageWeightKB, greenHost, dataTransfer: bytesSent },
+    environmentalImpact: impact,
+    yearlyImpact,
+    recommendations,
+    potentialSavings,
+    timestamp: new Date().toISOString()
   };
-  
-  if (ratings.carbon > 'B') {
-    // Estimate 30-60% reduction for poor ratings
-    potentialReduction.percentage = 40 + (Math.random() * 20);
-    potentialReduction.co2 = (co2 * potentialReduction.percentage / 100).toFixed(5);
-  } else if (ratings.carbon > 'C') {
-    // Estimate 15-30% reduction for average ratings
-    potentialReduction.percentage = 20 + (Math.random() * 15);
-    potentialReduction.co2 = (co2 * potentialReduction.percentage / 100).toFixed(5);
-  }
-  
-  return potentialReduction;
 }
 
-// Route handler for the main API endpoint
+// API endpoint
 app.post('/api/analyze', [
   body('url').isURL().withMessage('Please provide a valid URL')
 ], async (req, res) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-    
-    let SearchURL = req.body.url;
+    if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
 
-    // Add http:// if missing
-    if (!/^https?:\/\//i.test(SearchURL)) {
-      SearchURL = 'http://' + SearchURL;
-    }
+    let url = req.body.url;
+    if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
 
-    const result = await getCarbonData(SearchURL);
-    
-    res.json({
-      success: true,
-      data: result
-    });
+    const result = await getCarbonData(url);
+    res.json({ success: true, data: result });
   } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Internal server error'
-    });
+    console.error(error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// Route to get optimization tips
+// Optimization tips endpoint
 app.get('/api/tips', (req, res) => {
   const tips = [
-    {
-      category: "Images",
-      tips: [
-        "Use WebP or AVIF format instead of JPEG or PNG",
-        "Implement responsive images with srcset",
-        "Compress images before uploading",
-        "Use CSS effects instead of image files when possible"
-      ]
-    },
-    {
-      category: "Code",
-      tips: [
-        "Minify CSS, JavaScript, and HTML",
-        "Remove unused code and dependencies",
-        "Use efficient algorithms and data structures",
-        "Implement lazy loading for non-critical resources"
-      ]
-    },
-    {
-      category: "Hosting",
-      tips: [
-        "Choose a green web hosting provider",
-        "Use a CDN to reduce data travel distance",
-        "Enable compression (Gzip/Brotli)",
-        "Implement caching strategies"
-      ]
-    },
-    {
-      category: "Design",
-      tips: [
-        "Reduce the number of HTTP requests",
-        "Optimize above-the-fold content loading",
-        "Use system fonts instead of web fonts when possible",
-        "Reduce animations and complex visual effects"
-      ]
-    }
+    { category: "Images", tips: ["Use WebP/AVIF formats", "Responsive images", "Compress before upload", "CSS effects over images"] },
+    { category: "Code", tips: ["Minify CSS/JS/HTML", "Remove unused code", "Efficient algorithms", "Lazy load non-critical resources"] },
+    { category: "Hosting", tips: ["Green hosting", "Use CDN", "Enable compression", "Implement caching"] },
+    { category: "Design", tips: ["Reduce HTTP requests", "Optimize above-the-fold content", "Use system fonts", "Reduce heavy animations"] }
   ];
-  
-  res.json({
-    success: true,
-    data: tips
-  });
+  res.json({ success: true, data: tips });
 });
 
-// Serve the frontend
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// Serve frontend
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString() 
-  });
-});
+// Health check
+app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));
 
-// Error handling middleware
+// Global error handling
 app.use((error, req, res, next) => {
   console.error(error);
-  res.status(500).json({
-    success: false,
-    error: 'Internal server error'
-  });
+  res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
-// // 404 handler
-// app.use('*', (req, res) => {
-//   res.status(404).json({
-//     success: false,
-//     error: 'Endpoint not found'
-//   });
-// });
-
-// Start the server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+// Start server
+app.listen(port, () => console.log(`Server running on port ${port}`));
